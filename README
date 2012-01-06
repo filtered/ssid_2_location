@@ -1,0 +1,15 @@
+Fixup to map SSID to locations in OSX
+
+Install with make.
+
+Passing SSID_MAP="work_ssid = Work Location" will initialize the config.
+INSTALL_PATH may be changed, but should remain in the PATH - any changes not in path will require an explicit pathname definition in the plist file.
+CONFIG_PATH may be changed, but the ssid_2_location executable must be updated to reflect such.  This may be corrected in future revisions.
+GREP should be the location of grep and defaults to /usr/bin/grep.  This is currently irrelevant until the makefile begins using it.
+
+
+Licensed with
+http://creativecommons.org/licenses/by-sa/3.0/legalcode
+http://creativecommons.org/licenses/by-sa/3.0/
+
+Please attribute to https://github.com/filtered/

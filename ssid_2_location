@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+#get current ssid
+my ($ssid)       = `/System/Library/PrivateFrameworks/Apple80211.framework/Versions/A/Resources/airport -I` =~ m/ SSID: (.*)/;
+#current logged in user
+my $user         = getlogin();
+#store everything in the default config directory
+my $config_file  = "/Users/$user/.config/ssid_2_location/config";
+open my $config_fh, '<', $config_file or exit; #silent exit on missing config file
+my $ssid_to_location;
+while (my $line = readline $config_fh) {
+    next if $line =~ /^#/; #disregard all comments
+    next if $ssid && $line !~ /^$ssid = /; #if it isn't a match, don't continue
+    chomp $line;
+    my ($cssid, $location) = split " = ", $line;
+    $ssid_to_location->{$cssid} = $location;
+}
+my $location = $ssid_to_location->{$ssid} || 'Automatic';
+`/usr/sbin/scselect $location`;
+#bugfix for turned off airport - maybe more investigation needed, but this should do the trick for now
+`networksetup -setairportpower en1 on` if `networksetup -getairportpower en1` =~ m/off/ix;
+
+__END__
+
+#another way to set the location
+networksetup -switchtolocation LOCATION
+
+#use networksetup
+networksetup -getairportnetwork en1
+Current Wi-Fi Network: work_ssid
+networksetup -setairportpower en1 off
+networksetup -getairportnetwork en1
+You are not associated with an AirPort network.
+Wi-Fi power is currently off.
+
+#maybe allow dhcp and manual
+networksetup -setmanualwithdhcprouter networkservice ip
+             Use this command to specify a manual IP address to use for DHCP for the specified <networkservice>.
+
+#check current location
+my @locations = split /\n/, `/usr/sbin/scselect`;
+shift @locations;
+my $current_location;
+for my $location (@locations) {
+    if ($location =~ /\*/) {
+        ($current_location) = $location =~ m/\((.*)\)$/;
+        last;
+    }
+}
+#or better still:
+my $current_location = `networksetup -getcurrentlocation`;
+
+#applescript
+set AirportName to do shell script ¬
+/System/Library/PrivateFrameworks/Apple80211.framework/Versions/A/Resources/airport -I | sed '/ SSID: /!d; s/^.* SSID: //'
+set CurrentLocation to "Automatic"
+if AirportName is "work_ssid" then set CurrentLocation to "Work"
+do shell script "/usr/sbin/scselect '" & CurrentLocation & "'"
+
+#printing
+Use /usr/bin/lpoptions -d This Printer to change the default printer based on your location. Look at ~/.lpoptions file for the current default printer.
